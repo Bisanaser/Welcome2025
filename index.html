@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome 2025!!!</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #505257, #2a5298);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        canvas {
+            border: 2px solid white;
+            display: block;
+            background: #0f2027;
+        }
+
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 20px;
+        }
+
+        #restartBtn {
+            display: none;
+            position: absolute;
+            top: 100px;
+            font-size: 24px;
+            padding: 10px 20px;
+            background-color: #32CD32;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>Welcome 2025 Game!</h1>
+        <p>Pop the balloons before they escape! 🎈</p>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    <button id="restartBtn">Restart Game</button>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const restartBtn = document.getElementById('restartBtn');
+        const popSound = new Audio('https://www.soundjay.com/button/beep-07.wav');  
+
+        let balloons = [];
+        let score = 0;
+        let isGameOver = false;
+
+        // Resize canvas to fit screen
+        function resizeCanvas() {
+            canvas.width = window.innerWidth * 0.95; // Set canvas width to 95% of window width
+            canvas.height = window.innerHeight * 0.8; // Set canvas height to 80% of window height
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Initialize canvas size
+
+        class Balloon {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.radius = canvas.width * 0.04; // Adjust size based on canvas
+                this.color = color;
+                this.speed = Math.random() * 0.005 * canvas.height + 0.005 * canvas.height; 
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + this.radius);
+                ctx.lineTo(this.x, this.y + this.radius + 20);
+                ctx.strokeStyle = 'white';
+                ctx.stroke();
+                ctx.closePath();
+            }
+
+            update() {
+                this.y -= this.speed;
+            }
+        }
+
+        function spawnBalloon() {
+            if (isGameOver) return;
+            const x = Math.random() * (canvas.width - 60) + 30;
+            const y = canvas.height + 30;
+            const colors = ['#ff6347', '#ffa500', '#87CEEB', '#32CD32'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            balloons.push(new Balloon(x, y, color));
+        }
+
+        function drawScore() {
+            ctx.font = '20px Arial';
+            ctx.fillStyle = 'white';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            balloons.forEach((balloon, index) => {
+                balloon.update();
+                balloon.draw();
+                if (balloon.y + balloon.radius < 0) {
+                    balloons.splice(index, 1);
+                }
+            });
+
+            drawScore();
+        }
+
+        function detectHit(mouseX, mouseY) {
+            balloons.forEach((balloon, index) => {
+                const dx = mouseX - balloon.x;
+                const dy = mouseY - balloon.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < balloon.radius) {
+                    popSound.play();
+                    balloons.splice(index, 1);
+                    score++;
+                }
+            });
+        }
+
+        // Add mouse and touch event listeners
+        canvas.addEventListener('click', (e) => {
+            if (isGameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            detectHit(mouseX, mouseY);
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (isGameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            const touchY = e.touches[0].clientY - rect.top;
+            detectHit(touchX, touchY);
+        });
+
+        function endGame() {
+            isGameOver = true;
+            restartBtn.style.display = 'block';
+        }
+
+        function restartGame() {
+            balloons = [];
+            score = 0;
+            isGameOver = false;
+            restartBtn.style.display = 'none';
+            gameLoop();
+        }
+
+        setInterval(spawnBalloon, 1000);
+
+        function gameLoop() {
+            if (isGameOver) return;
+            updateGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+
+        restartBtn.addEventListener('click', restartGame);
+    </script>
+</body>
+</html>
